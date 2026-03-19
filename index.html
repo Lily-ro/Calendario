@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Calendario</title>
+
+<style>
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #dbeafe, #f0f9ff);
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Título */
+.title {
+    position: absolute;
+    top: 20px;
+    font-size: 28px;
+    color: #1e3a8a;
+}
+
+/* Contenedor principal */
+.calendar {
+    width: 360px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 20px;
+    transition: 0.3s;
+}
+
+/* Header */
+.calendar__info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.calendar__month {
+    font-weight: bold;
+    font-size: 18px;
+    color: #1e3a8a;
+}
+
+.calendar__year {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* Botones */
+.calendar__prev,
+.calendar__next {
+    cursor: pointer;
+    font-size: 18px;
+    padding: 8px;
+    border-radius: 10px;
+    transition: 0.2s;
+}
+
+.calendar__prev:hover,
+.calendar__next:hover {
+    background-color: #e0f2fe;
+}
+
+/* Días semana */
+.calendar-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 10px;
+}
+
+.calendar__day {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap; /* evita que se rompa la palabra */
+}
+
+/* Días */
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+/* Cada día */
+.calendar-days div {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: 0.2s;
+}
+
+/* Hover */
+.calendar-days div:hover {
+    background-color: #e0f2fe;
+    transform: scale(1.05);
+}
+
+/* Día actual */
+.today {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 5px 15px rgba(59,130,246,0.4);
+}
+
+/* Feriados */
+.holiday {
+    background-color: #fee2e2;
+    color: #dc2626;
+    font-weight: bold;
+}
+
+/* Animación al cambiar mes */
+.calendar-days div {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<h1 class="title">Calendario</h1>
+
+<div class="calendar">
+
+    <div class="calendar__info">
+        <div class="calendar__prev" id="prev-month">&#9664;</div>
+        <div class="calendar__month" id="month"></div>
+        <div class="calendar__year" id="year"></div>
+        <div class="calendar__next" id="next-month">&#9654;</div>
+    </div>
+
+    <div class="calendar-week">
+        <div class="calendar__day calendar__item">Lunes</div>
+        <div class="calendar__day calendar__item">Martes</div>
+        <div class="calendar__day calendar__item">Miércoles</div>
+        <div class="calendar__day calendar__item">Jueves</div>
+        <div class="calendar__day calendar__item">Viernes</div>
+        <div class="calendar__day calendar__item">Sábado</div>
+        <div class="calendar__day calendar__item">Domingo</div>
+    </div>
+
+    <div class="calendar-days" id="days"></div>
+
+</div>
+
+<script>
+const monthNames = [
+    "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+    "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+];
+
+let date = new Date();
+
+const monthEl = document.getElementById("month");
+const yearEl = document.getElementById("year");
+const daysEl = document.getElementById("days");
+
+// Ejemplo de feriados (podés agregar más)
+const holidays = {
+    // ENERO
+    "1-1": {
+        title: "Año Nuevo",
+        desc: "Primer día del año."
+    },
+
+    // FEBRERO / MARZO (fechas variables simplificadas)
+    "20-2": {
+        title: "Carnaval",
+        desc: "Fiesta popular en todo el país."
+    },
+    "21-2": {
+        title: "Carnaval (segundo día)",
+        desc: "Segundo día de celebración del carnaval."
+    },
+
+    // MARZO
+    "24-3": {
+        title: "Día de la Memoria",
+        desc: "En memoria de las víctimas de la dictadura militar."
+    },
+
+    // ABRIL
+    "2-4": {
+        title: "Día del Veterano y de los Caídos en Malvinas",
+        desc: "Homenaje a los soldados de la Guerra de Malvinas."
+    },
+
+    // MAYO
+    "1-5": {
+        title: "Día del Trabajador",
+        desc: "Conmemoración de los derechos laborales."
+    },
+    "25-5": {
+        title: "Revolución de Mayo",
+        desc: "Inicio del proceso de independencia argentina."
+    },
+
+    // JUNIO
+    "20-6": {
+        title: "Día de la Bandera",
+        desc: "En honor a Manuel Belgrano."
+    },
+
+    // JULIO
+    "9-7": {
+        title: "Día de la Independencia",
+        desc: "Declaración de independencia en 1816."
+    },
+
+    // AGOSTO (aproximado tercer lunes simplificado)
+    "17-8": {
+        title: "Paso a la Inmortalidad de San Martín",
+        desc: "Homenaje al Libertador José de San Martín."
+    },
+
+    // OCTUBRE
+    "12-10": {
+        title: "Día del Respeto a la Diversidad Cultural",
+        desc: "Reflexión sobre la diversidad cultural."
+    },
+
+    // NOVIEMBRE
+    "20-11": {
+        title: "Día de la Soberanía Nacional",
+        desc: "Conmemoración de la Vuelta de Obligado."
+    },
+
+    // DICIEMBRE
+    "8-12": {
+        title: "Inmaculada Concepción",
+        desc: "Celebración religiosa."
+    },
+    "25-12": {
+        title: "Navidad",
+        desc: "Celebración del nacimiento de Jesús."
+    },
+
+    // 📚 EFEMÉRIDES ESCOLARES
+    "27-2": {
+        title: "Creación de la Bandera",
+        desc: "Manuel Belgrano crea la bandera argentina."
+    },
+    "11-9": {
+        title: "Día del Maestro",
+        desc: "En honor a Domingo Faustino Sarmiento."
+    }
+};
+
+// Verificar año bisiesto
+function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
+
+// Días en un mes
+function getDaysInMonth(month, year) {
+    if (month === 1) return isLeapYear(year) ? 29 : 28;
+    return new Date(year, month + 1, 0).getDate();
+}
+
+function renderCalendar() {
+    const currentMonth = date.getMonth();
+    const currentYear = date.getFullYear();
+
+    monthEl.textContent = monthNames[currentMonth];
+    yearEl.textContent = currentYear;
+
+    daysEl.innerHTML = "";
+
+    let firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    firstDay = (firstDay === 0) ? 6 : firstDay - 1; // ajustar lunes inicio
+
+    const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+
+    // Espacios vacíos antes del primer día
+    for (let i = 0; i < firstDay; i++) {
+        daysEl.innerHTML += `<div></div>`;
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+
+        let className = "";
+
+        const today = new Date();
+        if (
+            day === today.getDate() &&
+            currentMonth === today.getMonth() &&
+            currentYear === today.getFullYear()
+        ) {
+            className += "today ";
+        }
+
+        // Feriados
+        if (holidays[`${day}-${currentMonth + 1}`]) {
+            className += "holiday";
+        }
+
+        daysEl.innerHTML += `<div class="${className}">${day}</div>`;
+    }
+}
+
+// Eventos
+document.getElementById("prev-month").onclick = () => {
+    date.setMonth(date.getMonth() - 1);
+    renderCalendar();
+};
+
+document.getElementById("next-month").onclick = () => {
+    date.setMonth(date.getMonth() + 1);
+    renderCalendar();
+};
+
+renderCalendar();
+</script>
+
+</body>
+</html>
